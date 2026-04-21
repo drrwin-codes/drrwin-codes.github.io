@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Darren Phan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #ffffff;
+      --surface:   #f0f5ff;
+      --border:    #d0dcf5;
+      --dim:       #7a8eb5;
+      --text:      #0d1a36;
+      --text-mid:  #3a4f7a;
+      --accent:    #1a52cc;
+      --accent-lt: rgba(26,82,204,0.08);
+      --accent-md: rgba(26,82,204,0.16);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.22;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Animations ─────────────────────────── */
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1),
+                  transform 0.7s cubic-bezier(0.22,1,0.36,1);
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    .reveal-children > * {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.55s cubic-bezier(0.22,1,0.36,1),
+                  transform 0.55s cubic-bezier(0.22,1,0.36,1);
+    }
+    .reveal-children.visible > *:nth-child(1) { opacity:1;transform:none;transition-delay:.04s }
+    .reveal-children.visible > *:nth-child(2) { opacity:1;transform:none;transition-delay:.12s }
+    .reveal-children.visible > *:nth-child(3) { opacity:1;transform:none;transition-delay:.20s }
+    .reveal-children.visible > *:nth-child(4) { opacity:1;transform:none;transition-delay:.28s }
+    .reveal-children.visible > *:nth-child(5) { opacity:1;transform:none;transition-delay:.36s }
+
+    /* Cursor glow */
+    #cursor-glow {
+      position: fixed;
+      width: 340px; height: 340px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(circle, rgba(26,82,204,0.055) 0%, transparent 70%);
+      transform: translate(-50%,-50%);
+    }
+
+    /* ─── Layout ─────────────────────────────── */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 5.5rem 2.8rem 6rem;
+    }
+
+    /* ─── Header ─────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: rise 0.75s 0.05s cubic-bezier(0.22,1,0.36,1) forwards;
+    }
+
+    .header-text { flex: 1; }
+
+    h1 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 3.1rem;
+      font-weight: 400;
+      line-height: 1.05;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.45rem;
+    }
+    .tagline {
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ─── Header graph ───────────────────────── */
+    .header-graph {
+      flex-shrink: 0;
+      width: 185px;
+      height: 152px;
+      opacity: 0;
+      animation: fadeIn 1.2s 0.4s ease forwards;
+    }
+
+    /* Node pulse */
+    @keyframes nodePulse {
+      0%,100% { r: 5; opacity: 0.85; }
+      50%      { r: 6.5; opacity: 1; }
+    }
+    @keyframes nodePulse2 {
+      0%,100% { r: 4.5; opacity: 0.7; }
+      50%      { r: 6; opacity: 0.95; }
+    }
+    @keyframes nodePulse3 {
+      0%,100% { r: 5.5; opacity: 0.8; }
+      50%      { r: 7; opacity: 1; }
+    }
+    @keyframes edgeFade {
+      0%,100% { opacity: 0.25; }
+      50%      { opacity: 0.55; }
+    }
+    @keyframes ringPulse {
+      0%,100% { r: 10; opacity: 0.15; }
+      50%      { r: 14; opacity: 0.3; }
+    }
+
+    .hg-n1 { animation: nodePulse  2.8s 0.0s ease-in-out infinite; }
+    .hg-n2 { animation: nodePulse2 3.2s 0.6s ease-in-out infinite; }
+    .hg-n3 { animation: nodePulse  2.5s 0.3s ease-in-out infinite; }
+    .hg-n4 { animation: nodePulse3 3.6s 0.9s ease-in-out infinite; }
+    .hg-n5 { animation: nodePulse2 2.9s 1.2s ease-in-out infinite; }
+    .hg-n6 { animation: nodePulse  3.1s 0.5s ease-in-out infinite; }
+    .hg-e  { animation: edgeFade   3.4s 0.2s ease-in-out infinite; }
+    .hg-ring { animation: ringPulse 3s 0.4s ease-in-out infinite; }
+
+    @keyframes aromaticFlow {
+      from { stroke-dashoffset: 0; }
+      to   { stroke-dashoffset: -82; }
+    }
+    .hg-aromatic { animation: aromaticFlow 5s linear infinite; }
+
+    @keyframes heteroHalo {
+      0%,100% { r: 9; opacity: 0.12; }
+      50%      { r: 12; opacity: 0.3; }
+    }
+    @keyframes heteroHalo2 {
+      0%,100% { r: 8.5; opacity: 0.1; }
+      50%      { r: 11.5; opacity: 0.28; }
+    }
+    .hg-halo1 { animation: heteroHalo  3.4s 0.5s ease-in-out infinite; }
+    .hg-halo2 { animation: heteroHalo2 3.8s 1.1s ease-in-out infinite; }
+
+    /* ─── Divider ────────────────────────────── */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.2rem 0;
+      transform-origin: left;
+      transform: scaleX(0);
+      opacity: 0;
+      transition: transform 0.7s cubic-bezier(0.22,1,0.36,1),
+                  opacity 0.4s ease;
+    }
+    hr.visible { transform: scaleX(1); opacity: 1; }
+    /* The first hr (after header) loads with the page */
+    hr.instant {
+      transform: scaleX(1);
+      opacity: 1;
+      animation: rise 0s 0s forwards; /* no animation */
+      opacity: 0;
+      animation: fadeIn 0.6s 0.3s ease forwards;
+    }
+
+    /* ─── Sections ───────────────────────────── */
+    .section { margin-bottom: 2.6rem; }
+
+    .label {
+      font-size: 0.67rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 1rem;
+    }
+    p {
+      font-size: 0.97rem;
+      color: var(--text-mid);
+      line-height: 1.78;
+    }
+
+    /* ─── Research Cards ─────────────────────── */
+    .cards-stack { display: flex; flex-direction: column; gap: 1rem; }
+
+    .research-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.45rem 1.65rem;
+      transition:
+        border-color 0.3s ease,
+        box-shadow   0.3s ease,
+        transform    0.3s cubic-bezier(0.22,1,0.36,1),
+        background   0.3s ease;
+    }
+    .research-card:hover {
+      border-color: rgba(26,82,204,0.4);
+      box-shadow: 0 8px 32px rgba(26,82,204,0.1);
+      transform: translateY(-3px);
+      background: #ebf1ff;
+    }
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .card-venue {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .card-badge {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--accent-lt);
+      color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 0.15em 0.65em;
+    }
+    .card-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.15rem;
+      font-weight: 500;
+      line-height: 1.38;
+      color: var(--text);
+      margin-bottom: 0.65rem;
+    }
+    .card-body {
+      font-size: 0.9rem;
+      color: var(--text-mid);
+      line-height: 1.73;
+    }
+
+    /* ─── Research Interests ─────────────────── */
+    .interests-grid { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+    .interest-btn {
+      position: relative;
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 0.8rem;
+      color: var(--accent);
+      background: var(--accent-lt);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 0.42em 1.1em;
+      cursor: default;
+      user-select: none;
+      transition:
+        background   0.25s ease,
+        border-color 0.25s ease,
+        color        0.25s ease,
+        transform    0.25s cubic-bezier(0.22,1,0.36,1),
+        box-shadow   0.25s ease;
+    }
+    .interest-btn:hover {
+      background: var(--accent-md);
+      border-color: rgba(26,82,204,0.45);
+      color: #0f3ba8;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(26,82,204,0.12);
+    }
+
+    .interest-btn .tooltip {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%) translateY(8px) scale(0.97);
+      width: 200px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 10px 36px rgba(26,82,204,0.14);
+      padding: 0.85rem;
+      pointer-events: none;
+      opacity: 0;
+      transition:
+        opacity   0.25s cubic-bezier(0.22,1,0.36,1),
+        transform 0.25s cubic-bezier(0.22,1,0.36,1);
+      z-index: 20;
+    }
+    .interest-btn:hover .tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+    .interest-btn:nth-last-child(1) .tooltip,
+    .interest-btn:nth-last-child(2) .tooltip {
+      left: auto; right: 0;
+      transform: translateY(8px) scale(0.97);
+    }
+    .interest-btn:nth-last-child(1):hover .tooltip,
+    .interest-btn:nth-last-child(2):hover .tooltip {
+      transform: translateY(0) scale(1);
+    }
+
+    .tooltip svg {
+      display: block;
+      width: 100%;
+      height: 78px;
+      border-radius: 6px;
+      margin-bottom: 0.6rem;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .tooltip-caption {
+      font-size: 0.72rem;
+      line-height: 1.5;
+      color: var(--text-mid);
+    }
+
+    /* ─── Animated SVG keyframes (inside tooltips) ── */
+
+    /* Graph Learning: drifting nodes */
+    @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(3px,-4px)} }
+    @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-3px,3px)} }
+    @keyframes drift3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(4px,2px)} }
+    @keyframes edgOp  { 0%,100%{opacity:.3} 50%{opacity:.65} }
+
+    .tgl-n1 { animation: drift1 4s ease-in-out infinite; }
+    .tgl-n2 { animation: drift2 3.5s ease-in-out infinite; }
+    .tgl-n3 { animation: drift3 4.5s ease-in-out infinite; }
+    .tgl-e  { animation: edgOp  3.8s ease-in-out infinite; }
+
+    /* Positional Encodings: bars grow */
+    @keyframes barGrow1 { 0%,100%{height:14px;y:26px} 50%{height:20px;y:20px} }
+    @keyframes barGrow2 { 0%,100%{height:20px;y:20px} 50%{height:28px;y:12px} }
+    @keyframes barGrow3 { 0%,100%{height:26px;y:14px} 50%{height:34px;y:6px} }
+    @keyframes barGrow4 { 0%,100%{height:16px;y:24px} 50%{height:22px;y:18px} }
+
+    /* Long-Range: dashoffset march */
+    @keyframes dashMarch { from{stroke-dashoffset:28} to{stroke-dashoffset:0} }
+    .tlr-dash { animation: dashMarch 1.6s linear infinite; }
+
+    /* Comp Bio: orbiting molecule */
+    @keyframes orbit { from{transform:rotate(0deg) translateX(22px) rotate(0deg)} to{transform:rotate(360deg) translateX(22px) rotate(-360deg)} }
+    .tcb-orbit1 { animation: orbit 5s linear infinite; transform-origin:130px 39px; }
+    @keyframes orbit2 { from{transform:rotate(180deg) translateX(22px) rotate(-180deg)} to{transform:rotate(540deg) translateX(22px) rotate(-540deg)} }
+    .tcb-orbit2 { animation: orbit2 7s linear infinite; transform-origin:130px 39px; }
+
+    /* Drug Discovery: ring spin */
+    @keyframes hexSpin { from{transform:rotate(0deg);transform-origin:100px 29px} to{transform:rotate(360deg);transform-origin:100px 29px} }
+    .tdd-ring { animation: hexSpin 8s linear infinite; transform-box:fill-box; transform-origin:center; }
+
+    /* ─── Collab block ────────────────────────── */
+    .collab-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.45rem 1.65rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition:
+        border-color 0.3s ease,
+        box-shadow   0.3s ease,
+        transform    0.3s cubic-bezier(0.22,1,0.36,1);
+    }
+    .collab-block:hover {
+      border-color: rgba(26,82,204,0.38);
+      box-shadow: 0 6px 24px rgba(26,82,204,0.09);
+      transform: translateY(-2px);
+    }
+    .collab-icon {
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      background: var(--accent-md);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .collab-title {
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+    .collab-body { font-size: 0.88rem; color: var(--text-mid); }
+    .collab-body a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .collab-body a:hover { border-color: var(--accent); }
+
+    /* ─── Footer ─────────────────────────────── */
+    .footer {
+      margin-top: 4rem;
+      font-size: 0.73rem;
+      color: var(--dim);
+      letter-spacing: 0.06em;
+      opacity: 0;
+      animation: rise 0.65s 0.9s cubic-bezier(0.22,1,0.36,1) forwards;
+    }
+  </style>
+</head>
+<body>
+
+<div id="cursor-glow"></div>
+
+<div class="page">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="header-text">
+      <h1>Darren Phan</h1>
+      <p class="tagline">Student Researcher</p>
+    </div>
+
+    <!-- Animated molecular graph -->
+    <svg class="header-graph" viewBox="0 0 200 164" xmlns="http://www.w3.org/2000/svg" fill="none">
+
+      <!-- ─── Substituent bonds (drawn first, behind ring) ─── -->
+      <!-- N up from top ring atom -->
+      <line x1="97" y1="57" x2="97" y2="33" stroke="#1a52cc" stroke-width="1.3" class="hg-e" opacity="0.6"/>
+      <!-- Upper-right chain: two segments -->
+      <line x1="117" y1="69" x2="144" y2="52" stroke="#1a52cc" stroke-width="1.3" class="hg-e" opacity="0.58"/>
+      <line x1="144" y1="52" x2="168" y2="60" stroke="#1a52cc" stroke-width="1.2" class="hg-e" opacity="0.4"/>
+      <!-- Lower-right arm -->
+      <line x1="117" y1="91" x2="144" y2="108" stroke="#1a52cc" stroke-width="1.3" class="hg-e" opacity="0.58"/>
+      <!-- O down from bottom ring atom -->
+      <line x1="97" y1="103" x2="97" y2="131" stroke="#1a52cc" stroke-width="1.4" class="hg-e" opacity="0.62"/>
+      <!-- Left arm -->
+      <line x1="77" y1="69" x2="50" y2="52" stroke="#1a52cc" stroke-width="1.3" class="hg-e" opacity="0.55"/>
+
+      <!-- ─── Benzene ring bonds ─── -->
+      <line x1="117" y1="69" x2="97"  y2="57"  stroke="#1a52cc" stroke-width="1.6" class="hg-e"/>
+      <line x1="97"  y1="57" x2="77"  y2="69"  stroke="#1a52cc" stroke-width="1.6" class="hg-e"/>
+      <line x1="77"  y1="69" x2="77"  y2="91"  stroke="#1a52cc" stroke-width="1.6" class="hg-e"/>
+      <line x1="77"  y1="91" x2="97"  y2="103" stroke="#1a52cc" stroke-width="1.6" class="hg-e"/>
+      <line x1="97"  y1="103" x2="117" y2="91" stroke="#1a52cc" stroke-width="1.6" class="hg-e"/>
+      <line x1="117" y1="91" x2="117" y2="69"  stroke="#1a52cc" stroke-width="1.6" class="hg-e"/>
+
+      <!-- ─── Aromatic inner dashed ring ─── -->
+      <circle class="hg-aromatic" cx="97" cy="80" r="13"
+              stroke="#1a52cc" stroke-width="1.1" stroke-dasharray="5.5 3.5" opacity="0.38"/>
+
+      <!-- ─── Heteroatom halos (N and O glow rings) ─── -->
+      <circle class="hg-halo1" cx="97" cy="33"  r="9"   stroke="#1a52cc" stroke-width="1.2" opacity="0.15"/>
+      <circle class="hg-halo2" cx="97" cy="131" r="8.5" stroke="#1a52cc" stroke-width="1.1" opacity="0.13"/>
+
+      <!-- ─── Ring carbon nodes ─── -->
+      <circle class="hg-n1" cx="117" cy="69"  r="4.5" fill="#1a52cc" opacity="0.88"/>
+      <circle class="hg-n2" cx="97"  cy="57"  r="5"   fill="#1a52cc" opacity="1"/>
+      <circle class="hg-n3" cx="77"  cy="69"  r="4.5" fill="#1a52cc" opacity="0.85"/>
+      <circle class="hg-n4" cx="77"  cy="91"  r="4.5" fill="#1a52cc" opacity="0.82"/>
+      <circle class="hg-n5" cx="97"  cy="103" r="5"   fill="#1a52cc" opacity="0.88"/>
+      <circle class="hg-n6" cx="117" cy="91"  r="4.5" fill="#1a52cc" opacity="0.85"/>
+
+      <!-- ─── Heteroatom nodes (N = nitrogen, O = oxygen) ─── -->
+      <circle class="hg-n3" cx="97"  cy="33"  r="5.8" fill="#2a5de8" opacity="0.92"/>
+      <circle class="hg-n5" cx="97"  cy="131" r="5.8" fill="#2a5de8" opacity="0.88"/>
+
+      <!-- ─── Substituent carbon atoms ─── -->
+      <circle class="hg-n4" cx="144" cy="52"  r="4"   fill="#1a52cc" opacity="0.7"/>
+      <circle            cx="168" cy="60"  r="3.5" fill="#1a52cc" opacity="0.48"/>
+      <circle class="hg-n1" cx="144" cy="108" r="4"   fill="#1a52cc" opacity="0.7"/>
+      <circle class="hg-n2" cx="50"  cy="52"  r="3.8" fill="#1a52cc" opacity="0.62"/>
+
+      <!-- ─── Atom labels ─── -->
+      <text x="97" y="33"  text-anchor="middle" dominant-baseline="middle"
+            font-size="6.2" font-family="monospace" fill="#ffffff" font-weight="bold" opacity="0.96">N</text>
+      <text x="97" y="131" text-anchor="middle" dominant-baseline="middle"
+            font-size="6.2" font-family="monospace" fill="#ffffff" font-weight="bold" opacity="0.94">O</text>
+    </svg>
+  </div>
+
+  <!-- Divider between header and about -->
+  <hr class="instant" />
+
+  <!-- ── About ── -->
+  <div class="section reveal">
+    <div class="label">About</div>
+    <p>
+      I'm a student researcher primarily working in computational
+      biology with a focus on applying machine learning to drug discovery. My work
+      spans QSAR modeling, molecular property prediction, and graph-based methods for
+      understanding biological systems. I'm currently also exploring the theoretical
+      foundations of graph learning, specifically when sequence-based models are the
+      right fit for graph-structured data.
+    </p>
+  </div>
+
+  <hr class="reveal" />
+
+  <!-- ── Research Interests ── -->
+  <div class="section">
+    <div class="label reveal">Research Interests</div>
+    <div class="interests-grid reveal-children">
+
+      <!-- Graph Representation Learning -->
+      <div class="interest-btn">
+        Graph Representation Learning
+        <div class="tooltip">
+          <svg viewBox="0 0 200 78" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="78" fill="#f0f5ff"/>
+            <g class="tgl-e">
+              <line x1="40" y1="40" x2="100" y2="20" stroke="#1a52cc" stroke-width="1.2"/>
+              <line x1="40" y1="40" x2="80"  y2="62" stroke="#1a52cc" stroke-width="1.2"/>
+              <line x1="100" y1="20" x2="160" y2="30" stroke="#1a52cc" stroke-width="1.2"/>
+              <line x1="80"  y1="62" x2="160" y2="30" stroke="#1a52cc" stroke-width="1.2"/>
+              <line x1="100" y1="20" x2="80"  y2="62" stroke="#1a52cc" stroke-width="1.2" opacity="0.5"/>
+              <line x1="160" y1="30" x2="140" y2="62" stroke="#1a52cc" stroke-width="1.2"/>
+            </g>
+            <circle class="tgl-n1" cx="40"  cy="40" r="5.5" fill="#1a52cc" opacity="0.85"/>
+            <circle class="tgl-n2" cx="100" cy="20" r="6"   fill="#1a52cc" opacity="0.95"/>
+            <circle class="tgl-n3" cx="80"  cy="62" r="5.5" fill="#1a52cc" opacity="0.8"/>
+            <circle          cx="160" cy="30" r="5"   fill="#1a52cc" opacity="0.8"/>
+            <circle          cx="140" cy="62" r="5"   fill="#1a52cc" opacity="0.75"/>
+          </svg>
+          <div class="tooltip-caption">Learning from graph-structured data via message passing and expressive structural encodings.</div>
+        </div>
+      </div>
+
+      <!-- Positional Encodings -->
+      <div class="interest-btn">
+        Positional Encodings
+        <div class="tooltip">
+          <svg viewBox="0 0 200 78" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="78" fill="#f0f5ff"/>
+            <!-- base line -->
+            <line x1="18" y1="55" x2="182" y2="55" stroke="#d0dcf5" stroke-width="1.4"/>
+            <!-- animated bars -->
+            <rect x="26"  width="14" fill="#1a52cc" opacity="0.55" rx="2">
+              <animate attributeName="height" values="14;22;14" dur="2.4s" repeatCount="indefinite"/>
+              <animate attributeName="y"      values="41;33;41" dur="2.4s" repeatCount="indefinite"/>
+            </rect>
+            <rect x="66"  width="14" fill="#1a52cc" opacity="0.7" rx="2">
+              <animate attributeName="height" values="22;32;22" dur="2.8s" begin="0.3s" repeatCount="indefinite"/>
+              <animate attributeName="y"      values="33;23;33" dur="2.8s" begin="0.3s" repeatCount="indefinite"/>
+            </rect>
+            <rect x="106" width="14" fill="#1a52cc" opacity="0.85" rx="2">
+              <animate attributeName="height" values="30;40;30" dur="2.2s" begin="0.6s" repeatCount="indefinite"/>
+              <animate attributeName="y"      values="25;15;25" dur="2.2s" begin="0.6s" repeatCount="indefinite"/>
+            </rect>
+            <rect x="146" width="14" fill="#1a52cc" opacity="0.65" rx="2">
+              <animate attributeName="height" values="18;26;18" dur="3s"   begin="0.9s" repeatCount="indefinite"/>
+              <animate attributeName="y"      values="37;29;37" dur="3s"   begin="0.9s" repeatCount="indefinite"/>
+            </rect>
+            <!-- nodes on baseline -->
+            <circle cx="33"  cy="55" r="4" fill="#1a52cc" opacity="0.8"/>
+            <circle cx="73"  cy="55" r="4" fill="#1a52cc" opacity="0.8"/>
+            <circle cx="113" cy="55" r="4" fill="#1a52cc" opacity="0.8"/>
+            <circle cx="153" cy="55" r="4" fill="#1a52cc" opacity="0.8"/>
+          </svg>
+          <div class="tooltip-caption">Encoding structural position into graph transformers to enable position-aware attention.</div>
+        </div>
+      </div>
+
+      <!-- Long-Range -->
+      <div class="interest-btn">
+        Long-Range Graph Learning
+        <div class="tooltip">
+          <svg viewBox="0 0 200 78" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="78" fill="#f0f5ff"/>
+            <path d="M18,20 Q100,42 182,20" stroke="#d0dcf5" stroke-width="1.4" fill="none"/>
+            <path d="M18,58 Q100,36 182,58" stroke="#d0dcf5" stroke-width="1.4" fill="none"/>
+            <line class="tlr-dash" x1="28" y1="39" x2="172" y2="39"
+                  stroke="#1a52cc" stroke-width="2"
+                  stroke-dasharray="7 4" stroke-dashoffset="0"/>
+            <circle cx="28"  cy="39" r="6" fill="#1a52cc" opacity="0.9"/>
+            <circle cx="100" cy="39" r="4" fill="#1a52cc" opacity="0.35"/>
+            <circle cx="172" cy="39" r="6" fill="#1a52cc" opacity="0.9"/>
+            <polygon points="172,39 163,34.5 163,43.5" fill="#1a52cc" opacity="0.8"/>
+          </svg>
+          <div class="tooltip-caption">Propagating signals across distant nodes — a core challenge in expressive graph models.</div>
+        </div>
+      </div>
+
+      <!-- Computational Biology -->
+      <div class="interest-btn">
+        Computational Biology
+        <div class="tooltip">
+          <svg viewBox="0 0 200 78" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="78" fill="#f0f5ff"/>
+            <!-- DNA helix -->
+            <path d="M28,10 Q55,39 28,68" stroke="#1a52cc" stroke-width="2" fill="none" opacity="0.7"/>
+            <path d="M58,10 Q31,39 58,68" stroke="#7a8eb5" stroke-width="2" fill="none" opacity="0.7"/>
+            <line x1="28" y1="10" x2="58" y2="10" stroke="#1a52cc" stroke-width="1.2" opacity="0.45"/>
+            <line x1="40" y1="24" x2="46" y2="24" stroke="#1a52cc" stroke-width="1.2" opacity="0.4"/>
+            <line x1="28" y1="39" x2="58" y2="39" stroke="#1a52cc" stroke-width="1.2" opacity="0.55"/>
+            <line x1="40" y1="54" x2="46" y2="54" stroke="#1a52cc" stroke-width="1.2" opacity="0.4"/>
+            <line x1="28" y1="68" x2="58" y2="68" stroke="#1a52cc" stroke-width="1.2" opacity="0.45"/>
+            <!-- Orbiting molecule -->
+            <circle cx="130" cy="39" r="7" fill="#e4eeff" stroke="#1a52cc" stroke-width="1.5"/>
+            <g class="tcb-orbit1">
+              <circle cx="130" cy="17" r="5" fill="#e4eeff" stroke="#1a52cc" stroke-width="1.2"/>
+            </g>
+            <g class="tcb-orbit2">
+              <circle cx="130" cy="17" r="4" fill="#e4eeff" stroke="#1a52cc" stroke-width="1.1"/>
+            </g>
+            <line x1="90" y1="39" x2="123" y2="39" stroke="#1a52cc" stroke-width="1" opacity="0.25"/>
+          </svg>
+          <div class="tooltip-caption">Applying ML to biological sequences and molecular systems for target identification and drug design.</div>
+        </div>
+      </div>
+
+      <!-- Drug Discovery -->
+      <div class="interest-btn">
+        Drug Discovery
+        <div class="tooltip">
+          <svg viewBox="0 0 200 78" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="78" fill="#f0f5ff"/>
+            <g class="tdd-ring">
+              <polygon points="100,10 120,21 120,43 100,54 80,43 80,21"
+                       fill="none" stroke="#1a52cc" stroke-width="1.8" opacity="0.85"/>
+              <polygon points="100,18 114,26 114,38 100,46 86,38 86,26"
+                       fill="none" stroke="#1a52cc" stroke-width="0.8" opacity="0.3"/>
+            </g>
+            <line x1="80"  y1="21" x2="64"  y2="12" stroke="#1a52cc" stroke-width="1.4" opacity="0.55"/>
+            <line x1="120" y1="21" x2="136" y2="12" stroke="#1a52cc" stroke-width="1.4" opacity="0.55"/>
+            <line x1="120" y1="43" x2="136" y2="52" stroke="#1a52cc" stroke-width="1.4" opacity="0.55"/>
+            <line x1="100" y1="54" x2="100" y2="66" stroke="#1a52cc" stroke-width="1.4" opacity="0.55"/>
+            <circle cx="64"  cy="12" r="4.5" fill="#1a52cc" opacity="0.75"/>
+            <circle cx="136" cy="12" r="4.5" fill="#1a52cc" opacity="0.75"/>
+            <circle cx="136" cy="52" r="4.5" fill="#1a52cc" opacity="0.75"/>
+            <circle cx="100" cy="66" r="4.5" fill="#1a52cc" opacity="0.75"/>
+            <text x="91" y="34" font-size="9" fill="#1a52cc" font-family="monospace" opacity="0.75">C₆</text>
+          </svg>
+          <div class="tooltip-caption">Using graph-based deep learning to screen and design small molecules as therapeutic candidates.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="reveal" />
+
+  <!-- ── Research ── -->
+  <div class="section reveal">
+    <div class="label">Research</div>
+    <div class="cards-stack">
+
+      <!-- ICML paper -->
+      <div class="research-card">
+        <div class="card-meta">
+          <span class="card-venue">ICML Workshop · 2025</span>
+          <span class="card-badge">Graph Learning</span>
+        </div>
+        <div class="card-title">How Sequential Is Your Graph? A New Lens for Long-Range Graph Learning</div>
+        <p class="card-body">
+          We introduce <em>Hamiltonian width</em>, a graph-theoretic measure of how sequential
+          a graph's structure is, and use it to design PC-PE (Path Cover Positional Encoding)
+          for Graph Transformers. We prove that standard message-passing networks require O(d)
+          layers for d-long-range tasks, while GPS with PC-PE reduces this to O(1) when nodes
+          share a backbone path — a claim we test and support via stratified LRGB benchmarks
+          and a six-condition ablation suite.
+        </p>
+      </div>
+
+      <!-- LDHA paper -->
+      <div class="research-card">
+        <div class="card-meta">
+          <span class="card-venue">Prospective · AAAS 2027</span>
+          <span class="card-badge">Drug Discovery</span>
+        </div>
+        <div class="card-title">QSAR Modeling of LDHA Inhibitors: Ensembles vs. Transformers for Potency Prediction</div>
+        <p class="card-body">
+          LDHA, an enzyme central to tumor metabolism, is a validated oncological target with
+          no inhibitor yet reaching clinical trials. We benchmark transformer-based tabular
+          architectures (TabTransformer, FT-Transformer, SAINT) against stacked ensemble models
+          for pIC50 prediction on 554 curated ChEMBL compounds. Scaffold-aware splitting reveals
+          meaningful generalization gaps, and SHAP analysis identifies molecular drug-likeness
+          as the primary driver of inhibitor potency.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="reveal" />
+
+  <!-- ── Collaboration ── -->
+  <div class="section reveal">
+    <div class="label">Collaboration</div>
+    <div class="collab-block">
+      <div class="collab-icon">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1a52cc" stroke-width="2.2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div>
+        <div class="collab-title">Open to Collaboration</div>
+        <p class="collab-body">
+          I'm always happy to connect with researchers working on graph learning,
+          computational biology, or drug discovery. Feel free to reach out at
+          <a href="mailto:darren.dp.phan@gmail.com">darren.dp.phan@gmail.com</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">darren phan · researcher</div>
+
+</div>
+
+<script>
+  // Cursor glow
+  const glow = document.getElementById('cursor-glow');
+  let mx = innerWidth/2, my = innerHeight/2, cx = mx, cy = my;
+  document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; });
+  (function loop() {
+    cx += (mx-cx)*0.07; cy += (my-cy)*0.07;
+    glow.style.left = cx+'px'; glow.style.top = cy+'px';
+    requestAnimationFrame(loop);
+  })();
+
+  // Scroll reveal
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal, .reveal-children, hr:not(.instant)').forEach(el => io.observe(el));
+</script>
+</body>
+</html>
